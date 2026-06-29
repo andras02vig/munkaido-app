@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Munkaidő Nyilvántartó</title>
+    <title>Work Hours Tracker</title>
     <style>
         :root {
             --bg-color: #000000;
             --text-color: #ffffff;
-            --accent-color: #d97736; /* A képeken látható narancssárgás árnyalat */
+            --accent-color: #d97736;
+            --card-bg: #1c1c1e;
             --border-color: #333333;
-            --input-bg: #1c1c1e;
+            --danger-color: #ff453a;
         }
 
         body {
@@ -18,208 +19,325 @@
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             padding-bottom: 100px;
         }
 
-        h2 {
+        h1 {
             text-align: center;
             color: var(--accent-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
+            font-size: 24px;
+            margin-top: 10px;
+            margin-bottom: 20px;
         }
 
-        /* Űrlap stílusok */
-        .form-container {
-            background-color: var(--input-bg);
+        .card {
+            background-color: var(--card-bg);
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 20px;
         }
 
         .input-group {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: flex-end;
         }
 
-        .input-group label {
+        .input-field {
             flex: 1;
-            font-size: 14px;
-            color: #888;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
         }
 
-        input {
+        .input-field label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        input, select {
+            width: 100%;
+            box-sizing: border-box;
             background-color: var(--bg-color);
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 8px;
-            border-radius: 5px;
-            width: 100%;
-            box-sizing: border-box;
-            color-scheme: dark; /* iOS sötét naptár/óra felugró */
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 16px;
+            color-scheme: dark;
         }
 
         button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-new-profile {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            height: 41px;
+        }
+
+        .btn-primary {
             width: 100%;
             background-color: var(--accent-color);
             color: white;
             border: none;
-            padding: 12px;
+            padding: 14px;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
-        /* Táblázat stílusok */
+        .week-header {
+            text-align: center;
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
+
         .entry-list {
             list-style: none;
             padding: 0;
             margin: 0;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
         }
 
         .entry-item {
             display: flex;
             justify-content: space-between;
-            padding: 12px 15px;
+            align-items: center;
+            padding: 12px 0;
             border-bottom: 1px solid var(--border-color);
-            font-size: 15px;
         }
 
         .entry-item:last-child {
             border-bottom: none;
         }
 
-        .entry-date {
-            color: #ccc;
-        }
-
-        .entry-time {
-            text-decoration: underline;
-            text-decoration-color: #555;
-        }
-
-        .delete-btn {
+        .btn-delete {
             background: none;
-            color: #ff453a;
+            color: var(--danger-color);
             border: none;
+            font-size: 22px;
             padding: 0 0 0 15px;
-            font-size: 18px;
             margin: 0;
-            width: auto;
         }
 
-        /* Összesítő stílusok */
-        .summary-container {
-            margin-top: 30px;
-            border-top: 2px solid white;
+        .week-summary {
+            margin-top: 15px;
             padding-top: 15px;
+            border-top: 1px dashed var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .summary-row {
+        .week-summary-row {
             display: flex;
             justify-content: space-between;
+            font-size: 16px;
             align-items: center;
-            margin-bottom: 10px;
-            font-size: 18px;
         }
 
-        .total-pay {
+        .grand-total-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .grand-total-card h3 {
+            margin-top: 0;
+            text-align: center;
             color: var(--accent-color);
-            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
         }
 
-        .icon {
-            margin-right: 8px;
+        .grand-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .grand-total-highlight {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--accent-color);
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .ot-badge {
+            background-color: rgba(255, 69, 58, 0.2);
+            color: var(--danger-color);
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
 
-    <h2>06.29. - 07.05</h2> <div class="form-container">
+    <h1>Work Log</h1>
+
+    <div class="card">
         <div class="input-group">
-            <div style="flex: 2; margin-right: 10px;">
-                <label>Dátum</label>
+            <div class="input-field" style="flex: 1.2;">
+                <label>Date</label>
                 <input type="date" id="dateInput" required>
             </div>
-            <div style="flex: 1;">
-                <label>Órabér ($)</label>
-                <input type="number" id="wageInput" value="10.60" step="0.1">
+            <div class="input-field" style="flex: 2;">
+                <label>Position</label>
+                <select id="profileSelect"></select>
             </div>
+            <button class="btn-new-profile" onclick="createNewProfile()">+ New</button>
         </div>
         <div class="input-group">
-            <div style="flex: 1; margin-right: 10px;">
-                <label>Kezdés</label>
+            <div class="input-field">
+                <label>Start</label>
                 <input type="time" id="startInput" required>
             </div>
-            <div style="flex: 1;">
-                <label>Befejezés</label>
+            <div class="input-field">
+                <label>End</label>
                 <input type="time" id="endInput" required>
             </div>
         </div>
-        <button onclick="addEntry()">Hozzáadás</button>
+        <button class="btn-primary" onclick="addEntry()">Add Shift</button>
     </div>
 
-    <ul class="entry-list" id="entryList">
-        </ul>
+    <div id="weeklyContainer"></div>
 
-    <div class="summary-container">
-        <div class="summary-row">
-            <span>⏱ <span id="totalHoursUI">0h 0m</span></span>
+    <div class="grand-total-card">
+        <h3>GRAND SUMMARY</h3>
+        <div class="grand-row">
+            <span>Total Work Hours:</span>
+            <span id="grandHours">0h 0m</span>
         </div>
-        <div class="summary-row" style="border-bottom: 2px solid white; padding-bottom: 10px;">
-            <span>💵 <span id="basePayUI">0.00 $</span></span>
-            <span class="total-pay" id="totalPayUI">0.00 $</span>
-        </div>
-        <div class="summary-row" style="justify-content: flex-end; margin-top: 10px;">
-            <span style="font-size: 20px; font-weight: bold;">TOTAL: <span class="total-pay" id="finalTotalUI">0.00 $</span></span>
+        <div class="grand-row grand-total-highlight">
+            <span>TOTAL:</span>
+            <span id="grandPay">0.00 $</span>
         </div>
     </div>
 
     <script>
-        // Adatok betöltése a telefon memóriájából (LocalStorage)
+        // --- DATA MANAGEMENT ---
+        
+        let profiles = JSON.parse(localStorage.getItem('workProfiles'));
+        if (!profiles || profiles.length === 0) {
+            profiles = [
+                { id: 'busser', name: 'Busser', wage: 10.60, otWage: 19.71 },
+                { id: 'dishwasher', name: 'Dishwasher', wage: 10.60, otWage: 19.71 }
+            ];
+            saveProfiles();
+        }
+
         let entries = JSON.parse(localStorage.getItem('workEntries')) || [];
 
-        // Mai dátum beállítása alapértelmezettnek
         document.getElementById('dateInput').valueAsDate = new Date();
 
-        function addEntry() {
-            const date = document.getElementById('dateInput').value;
-            const start = document.getElementById('startInput').value;
-            const end = document.getElementById('endInput').value;
-            const wage = parseFloat(document.getElementById('wageInput').value);
+        function saveProfiles() {
+            localStorage.setItem('workProfiles', JSON.stringify(profiles));
+        }
 
-            if (!date || !start || !end) {
-                alert("Kérlek tölts ki minden időpontot!");
+        function saveData() {
+            localStorage.setItem('workEntries', JSON.stringify(entries));
+        }
+
+        // --- UI FUNCTIONS ---
+
+        function renderProfiles() {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '';
+            profiles.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} (${p.wage}$/h)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function createNewProfile() {
+            const name = prompt("Position name (e.g., Server):");
+            if (!name) return;
+            
+            const wageInput = prompt(`What is the hourly wage for ${name}? ($)`);
+            if (!wageInput) return;
+            const wage = parseFloat(wageInput.replace(',', '.'));
+            
+            if (isNaN(wage)) {
+                alert("Invalid amount.");
+                return;
+            }
+            
+            const defaultOt = (wage * 1.86).toFixed(2);
+            const otInput = prompt(`What is the Overtime wage? (1.86x multiplier applied by default)`, defaultOt);
+            if (!otInput) return;
+            const otWage = parseFloat(otInput.replace(',', '.'));
+
+            if (isNaN(otWage)) {
+                alert("Invalid amount.");
                 return;
             }
 
-            // Munkaidő kiszámítása percekben
+            const newProfile = {
+                id: Date.now().toString(),
+                name: name,
+                wage: wage,
+                otWage: otWage
+            };
+            
+            profiles.push(newProfile);
+            saveProfiles();
+            renderProfiles();
+            document.getElementById('profileSelect').value = newProfile.id;
+            renderEntries();
+        }
+
+        function addEntry() {
+            const date = document.getElementById('dateInput').value;
+            const profileId = document.getElementById('profileSelect').value;
+            const start = document.getElementById('startInput').value;
+            const end = document.getElementById('endInput').value;
+
+            if (!date || !start || !end) {
+                alert("Please fill in all date and time fields!");
+                return;
+            }
+
             const startTime = new Date(`1970-01-01T${start}:00`);
             const endTime = new Date(`1970-01-01T${end}:00`);
             let diffMins = (endTime - startTime) / 1000 / 60;
-            
-            // Ha éjfél utánra nyúlik a műszak
             if (diffMins < 0) diffMins += 24 * 60;
 
             const entry = {
                 id: Date.now(),
                 date: date,
+                profileId: profileId,
                 start: start,
                 end: end,
-                minutes: diffMins,
-                wage: wage
+                minutes: diffMins
             };
 
             entries.push(entry);
             saveData();
             renderEntries();
             
-            // Mezők törlése (kivéve a dátumot és órabért)
             document.getElementById('startInput').value = '';
             document.getElementById('endInput').value = '';
         }
@@ -230,56 +348,168 @@
             renderEntries();
         }
 
-        function saveData() {
-            // Mentés a telefon offline memóriájába
-            localStorage.setItem('workEntries', JSON.stringify(entries));
+        // --- WEEKLY LOGIC ---
+
+        function getWeekIdentifier(dateStr) {
+            const [y, m, d] = dateStr.split('-');
+            const date = new Date(y, m - 1, d);
+            const day = date.getDay() === 0 ? 7 : date.getDay(); 
+            date.setDate(date.getDate() - day + 1); 
+            
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${date.getFullYear()}-${mm}-${dd}`;
+        }
+
+        function getWeekLabel(mondayDateStr) {
+            const [y, m, d] = mondayDateStr.split('-');
+            const monday = new Date(y, m - 1, d);
+            
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+            
+            const mMonth = String(monday.getMonth() + 1).padStart(2, '0');
+            const mDay = String(monday.getDate()).padStart(2, '0');
+            const sMonth = String(sunday.getMonth() + 1).padStart(2, '0');
+            const sDay = String(sunday.getDate()).padStart(2, '0');
+            
+            return `${mMonth}.${mDay} - ${sMonth}.${sDay}`;
         }
 
         function renderEntries() {
-            const list = document.getElementById('entryList');
-            list.innerHTML = '';
+            const container = document.getElementById('weeklyContainer');
+            container.innerHTML = '';
 
-            let totalMinutes = 0;
-            let totalPay = 0;
+            let weeks = {}; 
+            let grandTotalMins = 0;
+            let grandTotalPay = 0;
 
-            // Bejegyzések listázása
-            // Dátum formázása (pl. 06.29.2026 / Mo formátumra)
-            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-            // Rendezzük dátum szerint
-            entries.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            entries.forEach(entry => {
-                const dateObj = new Date(entry.date);
-                const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}.${dateObj.getFullYear()} / ${days[dateObj.getDay()]}`;
-                
-                const li = document.createElement('li');
-                li.className = 'entry-item';
-                li.innerHTML = `
-                    <span class="entry-date">${formattedDate}</span>
-                    <span class="entry-time">${entry.start}-${entry.end}</span>
-                    <button class="delete-btn" onclick="deleteEntry(${entry.id})">×</button>
-                `;
-                list.appendChild(li);
-
-                totalMinutes += entry.minutes;
-                totalPay += (entry.minutes / 60) * entry.wage;
+            entries.sort((a, b) => {
+                const timeA = new Date(a.date + 'T' + a.start);
+                const timeB = new Date(b.date + 'T' + b.start);
+                return timeA - timeB;
             });
 
-            // Összesítők frissítése élőben
-            const hours = Math.floor(totalMinutes / 60);
-            const mins = totalMinutes % 60;
+            entries.forEach(entry => {
+                const weekKey = getWeekIdentifier(entry.date);
+                if (!weeks[weekKey]) {
+                    weeks[weekKey] = { entries: [], totalMins: 0, totalPay: 0, otMins: 0 };
+                }
+                
+                const profile = profiles.find(p => p.id === entry.profileId) || profiles[0];
+                const wage = profile ? profile.wage : 0;
+                const otWage = profile ? profile.otWage : 0;
+
+                let minsForEntry = entry.minutes;
+                let regMins = 0;
+                let otMins = 0;
+                
+                if (weeks[weekKey].totalMins >= 40 * 60) {
+                    otMins = minsForEntry; 
+                } else if (weeks[weekKey].totalMins + minsForEntry > 40 * 60) {
+                    regMins = (40 * 60) - weeks[weekKey].totalMins; 
+                    otMins = minsForEntry - regMins; 
+                } else {
+                    regMins = minsForEntry; 
+                }
+
+                const pay = (regMins / 60) * wage + (otMins / 60) * otWage;
+                
+                entry.calculatedPay = pay;
+                entry.isOt = (otMins > 0); 
+                
+                weeks[weekKey].entries.push(entry);
+                weeks[weekKey].totalMins += minsForEntry;
+                weeks[weekKey].otMins += otMins;
+                weeks[weekKey].totalPay += pay;
+            });
+
+            const sortedWeeks = Object.keys(weeks).sort().reverse();
             
-            document.getElementById('totalHoursUI').innerText = `${hours}h ${mins}m`;
+            sortedWeeks.forEach(weekStr => {
+                const weekData = weeks[weekStr];
+                
+                const weekDiv = document.createElement('div');
+                weekDiv.className = 'card';
+                
+                const header = document.createElement('div');
+                header.className = 'week-header';
+                header.textContent = getWeekLabel(weekStr);
+                weekDiv.appendChild(header);
+                
+                const ul = document.createElement('ul');
+                ul.className = 'entry-list';
+                
+                weekData.entries.sort((a, b) => new Date(b.date + 'T' + b.start) - new Date(a.date + 'T' + a.start));
+
+                weekData.entries.forEach(entry => {
+                    const profile = profiles.find(p => p.id === entry.profileId) || profiles[0];
+                    const dateObj = new Date(entry.date);
+                    const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+                    const dateStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} / ${days[dateObj.getDay()]}`;
+                    
+                    const li = document.createElement('li');
+                    li.className = 'entry-item';
+                    
+                    const otBadge = entry.isOt ? `<span class="ot-badge">OT</span>` : '';
+
+                    li.innerHTML = `
+                        <div style="flex: 1;">
+                            <div style="color: #ccc; font-size: 14px;">
+                                ${dateStr} <span style="color:var(--accent-color); font-size:12px; margin-left:5px;">${profile.name}</span>
+                                ${otBadge}
+                            </div>
+                            <div style="text-decoration: underline; text-decoration-color: #555; font-size: 16px; margin-top:4px;">
+                                ${entry.start}-${entry.end}
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="font-weight: bold; font-size: 16px;">${entry.calculatedPay.toFixed(2)} $</div>
+                            <button class="btn-delete" onclick="deleteEntry(${entry.id})">×</button>
+                        </div>
+                    `;
+                    ul.appendChild(li);
+                });
+                weekDiv.appendChild(ul);
+                
+                const hours = Math.floor(weekData.totalMins / 60);
+                const mins = weekData.totalMins % 60;
+                
+                let otInfo = '';
+                if (weekData.otMins > 0) {
+                    const otH = Math.floor(weekData.otMins / 60);
+                    const otM = weekData.otMins % 60;
+                    otInfo = `<span style="font-size: 13px; color: var(--danger-color);">(Overtime: ${otH}h ${otM}m)</span>`;
+                }
+
+                const summary = document.createElement('div');
+                summary.className = 'week-summary';
+                summary.innerHTML = `
+                    <div class="week-summary-row">
+                        <span>⏱ <span style="color: white; font-weight: bold;">${hours}h ${mins}m</span></span>
+                    </div>
+                    ${otInfo ? `<div style="text-align: right; margin-top: -5px;">${otInfo}</div>` : ''}
+                    <div class="week-summary-row" style="margin-top: 5px;">
+                        <span>💵 <span style="color: var(--accent-color); font-weight: bold; font-size: 20px;">${weekData.totalPay.toFixed(2)} $</span></span>
+                    </div>
+                `;
+                weekDiv.appendChild(summary);
+                
+                container.appendChild(weekDiv);
+                
+                grandTotalMins += weekData.totalMins;
+                grandTotalPay += weekData.totalPay;
+            });
             
-            const formattedPay = totalPay.toFixed(2).replace('.', ',') + ' $';
-            document.getElementById('basePayUI').innerText = formattedPay;
-            document.getElementById('totalPayUI').innerText = formattedPay;
-            document.getElementById('finalTotalUI').innerText = formattedPay;
+            const grandH = Math.floor(grandTotalMins / 60);
+            const grandM = grandTotalMins % 60;
+            document.getElementById('grandHours').textContent = `${grandH}h ${grandM}m`;
+            document.getElementById('grandPay').textContent = `${grandTotalPay.toFixed(2)} $`;
         }
 
-        // Oldal betöltésekor renderelés
+        renderProfiles();
         renderEntries();
+
     </script>
 </body>
 </html>
