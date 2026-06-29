@@ -118,6 +118,23 @@
             border-color: var(--accent-color);
         }
 
+        /* Inline summary inputs for Tips & Housing */
+        .inline-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            padding: 4px 8px;
+            border-radius: 8px;
+            width: 80px;
+            text-align: right;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .inline-input:focus {
+            border-color: var(--accent-color);
+        }
+
         /* Week Header & Collapsible */
         .week-header {
             cursor: pointer;
@@ -161,6 +178,7 @@
             margin-bottom: 8px;
             font-size: 15px;
             color: var(--text-muted);
+            align-items: center;
         }
 
         .summary-row.total {
@@ -300,15 +318,16 @@
     <div id="weeksContainer"></div>
 
     <script>
-        let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v3')) || [];
-        let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v3')) || [];
+        // --- DATA STRUCTURE (v4 clean wipe) ---
+        let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v4')) || [];
+        let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v4')) || [];
         let activeWeekId = weeks.length > 0 ? weeks[0].id : null;
 
         document.getElementById('dateInput').valueAsDate = new Date();
 
         function saveData() {
-            localStorage.setItem('workLogWeeks_v3', JSON.stringify(weeks));
-            localStorage.setItem('workLogProfiles_v3', JSON.stringify(profiles));
+            localStorage.setItem('workLogWeeks_v4', JSON.stringify(weeks));
+            localStorage.setItem('workLogProfiles_v4', JSON.stringify(profiles));
         }
 
         // --- CORE FUNCTIONS ---
@@ -337,6 +356,8 @@
                 id: Date.now().toString(),
                 title: title,
                 isCollapsed: false,
+                tips: 0,
+                housing: 0,
                 shifts: []
             };
 
@@ -390,6 +411,15 @@
             week.isCollapsed = !week.isCollapsed;
             saveData();
             renderUI();
+        }
+
+        function updateWeekExtras(weekId, field, value) {
+            const week = weeks.find(w => w.id === weekId);
+            if (week) {
+                week[field] = parseFloat(value) || 0;
+                saveData();
+                renderUI();
+            }
         }
 
         // --- RENDER LOGIC ---
@@ -461,10 +491,8 @@
                     const shiftPay = (regMins / 60) * profile.wage + (otMins / 60) * profile.otWage;
                     totalWeekPay += shiftPay;
 
-                    // Időzóna hiba javítása: Helyi dátumként kezeljük a sztringet
                     const [y, m, d_day] = shift.date.split('-');
                     const d = new Date(y, m - 1, d_day);
-                    
                     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
                     shiftsHTML += `
@@ -488,6 +516,11 @@
                 const otHours = Math.floor(totalOTMinutes / 60);
                 const otRemainingMins = totalOTMinutes % 60;
 
+                // Net Pay számítás (Gross + Tips - Housing)
+                const weekTips = week.tips || 0;
+                const weekHousing = week.housing || 0;
+                const netWeekPay = totalWeekPay + weekTips - weekHousing;
+
                 const headerClass = week.isCollapsed ? "week-header" : "week-header week-header-border";
                 const chevronIcon = week.isCollapsed ? "▼" : "▲";
                 
@@ -505,7 +538,7 @@
                     headerContent += `
                         <div class="collapsed-summary">
                             <span>⏱ ${totalHours}h ${totalMins}m</span>
-                            <span class="text-accent">💰 $${totalWeekPay.toFixed(2)}</span>
+                            <span class="text-accent">💰 $${netWeekPay.toFixed(2)}</span>
                         </div>
                     `;
                 }
@@ -516,18 +549,30 @@
                         <div class="week-summary">
                             <div class="summary-row">
                                 <span>Total Time:</span>
-                                <span style="color: white;">${totalHours}h ${totalMins}m</span>
+                                <span style="color: white; font-weight: 500;">${totalHours}h ${totalMins}m</span>
                             </div>
                             <div class="summary-row">
                                 <span>Overtime (40h+):</span>
                                 <span class="${totalOTMinutes > 0 ? 'text-accent' : ''}">${otHours}h ${otRemainingMins}m</span>
                             </div>
+                            <div class="summary-row" style="border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px;">
+                                <span>Gross Pay:</span>
+                                <span style="color: white;">$${totalWeekPay.toFixed(2)}</span>
+                            </div>
+                            <div class="summary-row" onclick="event.stopPropagation()">
+                                <span>Tips Received (+):</span>
+                                <input type="number" class="inline-input" placeholder="0.00" value="${weekTips > 0 ? weekTips : ''}" step="0.01" onchange="updateWeekExtras('${week.id}', 'tips', this.value)">
+                            </div>
+                            <div class="summary-row" onclick="event.stopPropagation()" style="padding-bottom: 4px;">
+                                <span>Housing Deduct (-):</span>
+                                <input type="number" class="inline-input" placeholder="0.00" value="${weekHousing > 0 ? weekHousing : ''}" step="0.01" style="color: var(--danger);" onchange="updateWeekExtras('${week.id}', 'housing', this.value)">
+                            </div>
                             <div class="summary-row total">
-                                <span>Total Pay:</span>
-                                <span class="text-accent">$${totalWeekPay.toFixed(2)}</span>
+                                <span>Take-Home Pay:</span>
+                                <span class="text-accent">$${netWeekPay.toFixed(2)}</span>
                             </div>
                         </div>
-                        <div class="shift-list">
+                        <div class="shift-list" onclick="event.stopPropagation()">
                             ${shiftsHTML || '<div style="color:var(--text-muted); font-size: 14px; text-align:center;">No shifts added yet.</div>'}
                         </div>
                     `;
