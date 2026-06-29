@@ -300,7 +300,6 @@
     <div id="weeksContainer"></div>
 
     <script>
-        // --- DATA STRUCTURE (v3 wipes old data cleanly) ---
         let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v3')) || [];
         let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v3')) || [];
         let activeWeekId = weeks.length > 0 ? weeks[0].id : null;
@@ -337,7 +336,7 @@
             const newWeek = {
                 id: Date.now().toString(),
                 title: title,
-                isCollapsed: false, // Új hét alapból nyitva van
+                isCollapsed: false,
                 shifts: []
             };
 
@@ -369,7 +368,6 @@
                 date, profileId, start, end, minutes: diffMins
             });
             
-            // Ha hozzáadunk valamit, biztosítsuk, hogy nyitva legyen az a hét
             activeWeek.isCollapsed = false;
 
             saveData();
@@ -397,7 +395,6 @@
         // --- RENDER LOGIC ---
 
         function renderUI() {
-            // Dropdown frissítése
             const select = document.getElementById('profileSelect');
             const currentVal = select.value;
             select.innerHTML = '';
@@ -419,7 +416,6 @@
                 if (currentVal && profiles.some(p => p.id === currentVal)) select.value = currentVal;
             }
 
-            // Felső panel megjelenítése
             const inputSection = document.getElementById('inputSection');
             if (weeks.length === 0) {
                 inputSection.classList.add('hidden');
@@ -434,7 +430,6 @@
             const container = document.getElementById('weeksContainer');
             container.innerHTML = '';
 
-            // Hetek renderelése
             weeks.forEach((week, index) => {
                 const isLatest = index === 0;
 
@@ -445,7 +440,6 @@
                 let totalOTMinutes = 0;
                 let shiftsHTML = '';
 
-                // Számolások elvégzése ELŐSZÖR, hogy kiírhassuk felülre
                 week.shifts.forEach(shift => {
                     const profile = profiles.find(p => p.id === shift.profileId) || {name: 'Deleted', wage: 0, otWage: 0};
                     
@@ -467,7 +461,10 @@
                     const shiftPay = (regMins / 60) * profile.wage + (otMins / 60) * profile.otWage;
                     totalWeekPay += shiftPay;
 
-                    const d = new Date(shift.date);
+                    // Időzóna hiba javítása: Helyi dátumként kezeljük a sztringet
+                    const [y, m, d_day] = shift.date.split('-');
+                    const d = new Date(y, m - 1, d_day);
+                    
                     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
                     shiftsHTML += `
@@ -491,7 +488,6 @@
                 const otHours = Math.floor(totalOTMinutes / 60);
                 const otRemainingMins = totalOTMinutes % 60;
 
-                // Ha összecsukva van, csak a rövid fejléc látszik
                 const headerClass = week.isCollapsed ? "week-header" : "week-header week-header-border";
                 const chevronIcon = week.isCollapsed ? "▼" : "▲";
                 
@@ -514,7 +510,6 @@
                     `;
                 }
 
-                // Ha NYITVA van, látszik a részletes összegző a tetején, majd alatta a műszakok
                 let expandedContent = '';
                 if (!week.isCollapsed) {
                     expandedContent = `
