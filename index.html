@@ -41,8 +41,9 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
         }
 
         .top-controls {
@@ -108,7 +109,7 @@
             color: var(--text-main);
             padding: 12px;
             border-radius: 12px;
-            font-size: 16px; /* Prevents iOS zoom */
+            font-size: 16px;
             color-scheme: dark;
             outline: none;
         }
@@ -117,19 +118,71 @@
             border-color: var(--accent-color);
         }
 
-        /* Lists and Items */
+        /* Week Header & Collapsible */
         .week-header {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--accent-color);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 12px;
-            margin-bottom: 15px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .week-header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-color);
         }
 
+        .week-header-border {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .chevron {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Summaries */
+        .week-summary {
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 15px;
+            color: var(--text-muted);
+        }
+
+        .summary-row.total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0;
+        }
+
+        .collapsed-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* Lists and Items */
         .shift-list {
             display: flex;
             flex-direction: column;
@@ -192,32 +245,6 @@
             margin: 0;
         }
 
-        /* Summaries */
-        .week-summary {
-            margin-top: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 15px;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 15px;
-            color: var(--text-muted);
-        }
-
-        .summary-row.total {
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 0;
-        }
-
         .ot-indicator {
             font-size: 11px;
             color: var(--danger);
@@ -227,9 +254,8 @@
             margin-top: 4px;
         }
 
-        /* Utilities */
         .hidden { display: none !important; }
-        .text-accent { color: var(--accent-color); }
+        .text-accent { color: var(--accent-color) !important; }
     </style>
 </head>
 <body>
@@ -242,8 +268,8 @@
     </div>
 
     <div id="inputSection" class="glass-card hidden">
-        <div class="week-header">
-            <span id="activeWeekTitle">Current Week</span>
+        <div class="week-header-top" style="margin-bottom: 15px; justify-content: center;">
+            <span id="activeWeekTitle" style="color: var(--text-main); font-size: 16px;">Current Week</span>
         </div>
         
         <div class="input-row">
@@ -274,30 +300,19 @@
     <div id="weeksContainer"></div>
 
     <script>
-        // --- DATA STRUCTURE ---
-        // profiles: [{id, name, wage, otWage}]
-        // weeks: [{ id, title, shifts: [{id, date, profileId, start, end, minutes}] }]
-        
-        let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v2'));
-        if (!profiles || profiles.length === 0) {
-            profiles = [
-                { id: 'busser', name: 'Busser', wage: 10.60, otWage: 19.71 },
-                { id: 'dishwasher', name: 'Dishwasher', wage: 10.60, otWage: 19.71 }
-            ];
-            localStorage.setItem('workLogProfiles_v2', JSON.stringify(profiles));
-        }
-
-        let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v2')) || [];
-        let activeWeekId = weeks.length > 0 ? weeks[0].id : null; // First in array is the newest
+        // --- DATA STRUCTURE (v3 wipes old data cleanly) ---
+        let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v3')) || [];
+        let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v3')) || [];
+        let activeWeekId = weeks.length > 0 ? weeks[0].id : null;
 
         document.getElementById('dateInput').valueAsDate = new Date();
 
-        // --- CORE FUNCTIONS ---
-
         function saveData() {
-            localStorage.setItem('workLogWeeks_v2', JSON.stringify(weeks));
-            localStorage.setItem('workLogProfiles_v2', JSON.stringify(profiles));
+            localStorage.setItem('workLogWeeks_v3', JSON.stringify(weeks));
+            localStorage.setItem('workLogProfiles_v3', JSON.stringify(profiles));
         }
+
+        // --- CORE FUNCTIONS ---
 
         function manageProfiles() {
             const name = prompt("Enter new position name (e.g., Server):");
@@ -322,10 +337,10 @@
             const newWeek = {
                 id: Date.now().toString(),
                 title: title,
+                isCollapsed: false, // Új hét alapból nyitva van
                 shifts: []
             };
 
-            // Add to the beginning of the array so newest is on top
             weeks.unshift(newWeek);
             activeWeekId = newWeek.id;
             saveData();
@@ -333,6 +348,7 @@
         }
 
         function addShift() {
+            if (profiles.length === 0) return alert("Please create a position (⚙️ Positions) first!");
             if (!activeWeekId) return alert("Please create a New Week first!");
 
             const date = document.getElementById('dateInput').value;
@@ -345,13 +361,16 @@
             const startTime = new Date(`1970-01-01T${start}:00`);
             const endTime = new Date(`1970-01-01T${end}:00`);
             let diffMins = (endTime - startTime) / 1000 / 60;
-            if (diffMins < 0) diffMins += 24 * 60; // Crosses midnight
+            if (diffMins < 0) diffMins += 24 * 60; 
 
             const activeWeek = weeks.find(w => w.id === activeWeekId);
             activeWeek.shifts.push({
                 id: Date.now().toString(),
                 date, profileId, start, end, minutes: diffMins
             });
+            
+            // Ha hozzáadunk valamit, biztosítsuk, hogy nyitva legyen az a hét
+            activeWeek.isCollapsed = false;
 
             saveData();
             renderUI();
@@ -368,22 +387,39 @@
             renderUI();
         }
 
-        // --- RENDER LOGIC (INCLUDING OVERTIME) ---
+        function toggleWeek(weekId) {
+            const week = weeks.find(w => w.id === weekId);
+            week.isCollapsed = !week.isCollapsed;
+            saveData();
+            renderUI();
+        }
+
+        // --- RENDER LOGIC ---
 
         function renderUI() {
-            // Update Profile Select
+            // Dropdown frissítése
             const select = document.getElementById('profileSelect');
             const currentVal = select.value;
             select.innerHTML = '';
-            profiles.forEach(p => {
+            
+            if (profiles.length === 0) {
                 const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.name} ($${p.wage})`;
+                opt.value = "";
+                opt.textContent = "-- Create Position First --";
                 select.appendChild(opt);
-            });
-            if (currentVal && profiles.some(p => p.id === currentVal)) select.value = currentVal;
+                select.disabled = true;
+            } else {
+                select.disabled = false;
+                profiles.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.name} ($${p.wage})`;
+                    select.appendChild(opt);
+                });
+                if (currentVal && profiles.some(p => p.id === currentVal)) select.value = currentVal;
+            }
 
-            // Handle Input Section Visibility
+            // Felső panel megjelenítése
             const inputSection = document.getElementById('inputSection');
             if (weeks.length === 0) {
                 inputSection.classList.add('hidden');
@@ -391,41 +427,38 @@
                 return;
             } else {
                 inputSection.classList.remove('hidden');
-                activeWeekId = weeks[0].id; // Ensure top week is active
+                activeWeekId = weeks[0].id;
                 document.getElementById('activeWeekTitle').textContent = `Adding to: ${weeks[0].title}`;
             }
 
             const container = document.getElementById('weeksContainer');
             container.innerHTML = '';
 
-            // Render Weeks
+            // Hetek renderelése
             weeks.forEach((week, index) => {
-                const isLatest = index === 0; // Only the most recent week is "open" for adding visually via the top form
+                const isLatest = index === 0;
 
-                // 1. Sort shifts chronologically for accurate Overtime calculation
                 week.shifts.sort((a, b) => new Date(a.date + 'T' + a.start) - new Date(b.date + 'T' + b.start));
 
                 let cumulativeMinutes = 0;
                 let totalWeekPay = 0;
                 let totalOTMinutes = 0;
-
                 let shiftsHTML = '';
 
-                // 2. Calculate shifts
+                // Számolások elvégzése ELŐSZÖR, hogy kiírhassuk felülre
                 week.shifts.forEach(shift => {
-                    const profile = profiles.find(p => p.id === shift.profileId) || profiles[0];
+                    const profile = profiles.find(p => p.id === shift.profileId) || {name: 'Deleted', wage: 0, otWage: 0};
                     
                     let regMins = 0;
                     let otMins = 0;
                     
-                    // OT Logic: over 40 hours (2400 minutes)
                     if (cumulativeMinutes >= 2400) {
-                        otMins = shift.minutes; // All OT
+                        otMins = shift.minutes;
                     } else if (cumulativeMinutes + shift.minutes > 2400) {
-                        regMins = 2400 - cumulativeMinutes; // Fill up to 40h
-                        otMins = shift.minutes - regMins;   // Rest is OT
+                        regMins = 2400 - cumulativeMinutes;
+                        otMins = shift.minutes - regMins;
                     } else {
-                        regMins = shift.minutes; // All Regular
+                        regMins = shift.minutes;
                     }
 
                     cumulativeMinutes += shift.minutes;
@@ -434,7 +467,6 @@
                     const shiftPay = (regMins / 60) * profile.wage + (otMins / 60) * profile.otWage;
                     totalWeekPay += shiftPay;
 
-                    // Formatting date
                     const d = new Date(shift.date);
                     const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -454,23 +486,38 @@
                     `;
                 });
 
-                // Format Summaries
                 const totalHours = Math.floor(cumulativeMinutes / 60);
                 const totalMins = cumulativeMinutes % 60;
                 const otHours = Math.floor(totalOTMinutes / 60);
                 const otRemainingMins = totalOTMinutes % 60;
 
-                const weekHTML = `
-                    <div class="glass-card">
-                        <div class="week-header">
-                            <span>🗓 ${week.title}</span>
+                // Ha összecsukva van, csak a rövid fejléc látszik
+                const headerClass = week.isCollapsed ? "week-header" : "week-header week-header-border";
+                const chevronIcon = week.isCollapsed ? "▼" : "▲";
+                
+                let headerContent = `
+                    <div class="week-header-top">
+                        <span>🗓 ${week.title}</span>
+                        <div style="display:flex; align-items:center; gap: 10px;">
                             ${isLatest ? `<span style="font-size: 12px; color: var(--success); font-weight: normal;">Active</span>` : ''}
+                            <span class="chevron">${chevronIcon}</span>
                         </div>
-                        
-                        <div class="shift-list">
-                            ${shiftsHTML || '<div style="color:var(--text-muted); font-size: 14px; text-align:center;">No shifts added yet.</div>'}
-                        </div>
+                    </div>
+                `;
 
+                if (week.isCollapsed) {
+                    headerContent += `
+                        <div class="collapsed-summary">
+                            <span>⏱ ${totalHours}h ${totalMins}m</span>
+                            <span class="text-accent">💰 $${totalWeekPay.toFixed(2)}</span>
+                        </div>
+                    `;
+                }
+
+                // Ha NYITVA van, látszik a részletes összegző a tetején, majd alatta a műszakok
+                let expandedContent = '';
+                if (!week.isCollapsed) {
+                    expandedContent = `
                         <div class="week-summary">
                             <div class="summary-row">
                                 <span>Total Time:</span>
@@ -485,6 +532,18 @@
                                 <span class="text-accent">$${totalWeekPay.toFixed(2)}</span>
                             </div>
                         </div>
+                        <div class="shift-list">
+                            ${shiftsHTML || '<div style="color:var(--text-muted); font-size: 14px; text-align:center;">No shifts added yet.</div>'}
+                        </div>
+                    `;
+                }
+
+                const weekHTML = `
+                    <div class="glass-card">
+                        <div class="${headerClass}" onclick="toggleWeek('${week.id}')">
+                            ${headerContent}
+                        </div>
+                        ${expandedContent}
                     </div>
                 `;
                 
@@ -492,7 +551,6 @@
             });
         }
 
-        // --- INIT ---
         renderUI();
 
     </script>
