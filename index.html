@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Munkaidő Nyilvántartó</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --accent-color: #d97736; /* A képeken látható narancssárgás árnyalat */
+            --border-color: #333333;
+            --input-bg: #1c1c1e;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Űrlap stílusok */
+        .form-container {
+            background-color: var(--input-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .input-group label {
+            flex: 1;
+            font-size: 14px;
+            color: #888;
+        }
+
+        input {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+            color-scheme: dark; /* iOS sötét naptár/óra felugró */
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Táblázat stílusok */
+        .entry-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .entry-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 15px;
+        }
+
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+
+        .entry-date {
+            color: #ccc;
+        }
+
+        .entry-time {
+            text-decoration: underline;
+            text-decoration-color: #555;
+        }
+
+        .delete-btn {
+            background: none;
+            color: #ff453a;
+            border: none;
+            padding: 0 0 0 15px;
+            font-size: 18px;
+            margin: 0;
+            width: auto;
+        }
+
+        /* Összesítő stílusok */
+        .summary-container {
+            margin-top: 30px;
+            border-top: 2px solid white;
+            padding-top: 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .total-pay {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .icon {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>06.29. - 07.05</h2> <div class="form-container">
+        <div class="input-group">
+            <div style="flex: 2; margin-right: 10px;">
+                <label>Dátum</label>
+                <input type="date" id="dateInput" required>
+            </div>
+            <div style="flex: 1;">
+                <label>Órabér ($)</label>
+                <input type="number" id="wageInput" value="10.60" step="0.1">
+            </div>
+        </div>
+        <div class="input-group">
+            <div style="flex: 1; margin-right: 10px;">
+                <label>Kezdés</label>
+                <input type="time" id="startInput" required>
+            </div>
+            <div style="flex: 1;">
+                <label>Befejezés</label>
+                <input type="time" id="endInput" required>
+            </div>
+        </div>
+        <button onclick="addEntry()">Hozzáadás</button>
+    </div>
+
+    <ul class="entry-list" id="entryList">
+        </ul>
+
+    <div class="summary-container">
+        <div class="summary-row">
+            <span>⏱ <span id="totalHoursUI">0h 0m</span></span>
+        </div>
+        <div class="summary-row" style="border-bottom: 2px solid white; padding-bottom: 10px;">
+            <span>💵 <span id="basePayUI">0.00 $</span></span>
+            <span class="total-pay" id="totalPayUI">0.00 $</span>
+        </div>
+        <div class="summary-row" style="justify-content: flex-end; margin-top: 10px;">
+            <span style="font-size: 20px; font-weight: bold;">TOTAL: <span class="total-pay" id="finalTotalUI">0.00 $</span></span>
+        </div>
+    </div>
+
+    <script>
+        // Adatok betöltése a telefon memóriájából (LocalStorage)
+        let entries = JSON.parse(localStorage.getItem('workEntries')) || [];
+
+        // Mai dátum beállítása alapértelmezettnek
+        document.getElementById('dateInput').valueAsDate = new Date();
+
+        function addEntry() {
+            const date = document.getElementById('dateInput').value;
+            const start = document.getElementById('startInput').value;
+            const end = document.getElementById('endInput').value;
+            const wage = parseFloat(document.getElementById('wageInput').value);
+
+            if (!date || !start || !end) {
+                alert("Kérlek tölts ki minden időpontot!");
+                return;
+            }
+
+            // Munkaidő kiszámítása percekben
+            const startTime = new Date(`1970-01-01T${start}:00`);
+            const endTime = new Date(`1970-01-01T${end}:00`);
+            let diffMins = (endTime - startTime) / 1000 / 60;
+            
+            // Ha éjfél utánra nyúlik a műszak
+            if (diffMins < 0) diffMins += 24 * 60;
+
+            const entry = {
+                id: Date.now(),
+                date: date,
+                start: start,
+                end: end,
+                minutes: diffMins,
+                wage: wage
+            };
+
+            entries.push(entry);
+            saveData();
+            renderEntries();
+            
+            // Mezők törlése (kivéve a dátumot és órabért)
+            document.getElementById('startInput').value = '';
+            document.getElementById('endInput').value = '';
+        }
+
+        function deleteEntry(id) {
+            entries = entries.filter(e => e.id !== id);
+            saveData();
+            renderEntries();
+        }
+
+        function saveData() {
+            // Mentés a telefon offline memóriájába
+            localStorage.setItem('workEntries', JSON.stringify(entries));
+        }
+
+        function renderEntries() {
+            const list = document.getElementById('entryList');
+            list.innerHTML = '';
+
+            let totalMinutes = 0;
+            let totalPay = 0;
+
+            // Bejegyzések listázása
+            // Dátum formázása (pl. 06.29.2026 / Mo formátumra)
+            const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+            // Rendezzük dátum szerint
+            entries.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            entries.forEach(entry => {
+                const dateObj = new Date(entry.date);
+                const formattedDate = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}.${dateObj.getFullYear()} / ${days[dateObj.getDay()]}`;
+                
+                const li = document.createElement('li');
+                li.className = 'entry-item';
+                li.innerHTML = `
+                    <span class="entry-date">${formattedDate}</span>
+                    <span class="entry-time">${entry.start}-${entry.end}</span>
+                    <button class="delete-btn" onclick="deleteEntry(${entry.id})">×</button>
+                `;
+                list.appendChild(li);
+
+                totalMinutes += entry.minutes;
+                totalPay += (entry.minutes / 60) * entry.wage;
+            });
+
+            // Összesítők frissítése élőben
+            const hours = Math.floor(totalMinutes / 60);
+            const mins = totalMinutes % 60;
+            
+            document.getElementById('totalHoursUI').innerText = `${hours}h ${mins}m`;
+            
+            const formattedPay = totalPay.toFixed(2).replace('.', ',') + ' $';
+            document.getElementById('basePayUI').innerText = formattedPay;
+            document.getElementById('totalPayUI').innerText = formattedPay;
+            document.getElementById('finalTotalUI').innerText = formattedPay;
+        }
+
+        // Oldal betöltésekor renderelés
+        renderEntries();
+    </script>
+</body>
+</html>
