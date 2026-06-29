@@ -3,512 +3,497 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Work Hours Tracker</title>
+    <title>Work Log</title>
     <style>
         :root {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --accent-color: #d97736;
-            --card-bg: #1c1c1e;
-            --border-color: #333333;
-            --danger-color: #ff453a;
+            --accent-color: #fca311;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a5;
+            --danger: #ff453a;
+            --success: #32d74b;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 15px;
-            padding-bottom: 100px;
+            padding: 20px 15px 100px 15px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #121212 0%, #1c1c1e 50%, #000000 100%);
+            background-attachment: fixed;
+            color: var(--text-main);
         }
 
         h1 {
             text-align: center;
-            color: var(--accent-color);
-            font-size: 24px;
-            margin-top: 10px;
-            margin-bottom: 20px;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            letter-spacing: 0.5px;
+            background: linear-gradient(90deg, #fff, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .card {
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+        /* Glassmorphism Classes */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
-        .input-group {
+        .top-controls {
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
             margin-bottom: 15px;
-            align-items: flex-end;
-        }
-
-        .input-field {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        .input-field label {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 6px;
-        }
-
-        input, select {
-            width: 100%;
-            box-sizing: border-box;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 16px;
-            color-scheme: dark;
+            gap: 10px;
         }
 
         button {
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
             cursor: pointer;
-            font-weight: bold;
+            padding: 12px;
+            transition: opacity 0.2s;
         }
 
-        .btn-new-profile {
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            height: 41px;
+        button:active {
+            opacity: 0.7;
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex: 1;
         }
 
         .btn-primary {
+            background: var(--accent-color);
+            color: #000;
             width: 100%;
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
+            margin-top: 15px;
+            font-size: 17px;
             padding: 14px;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-top: 5px;
         }
 
+        /* Forms & Inputs */
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            margin-left: 4px;
+        }
+
+        input, select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 16px; /* Prevents iOS zoom */
+            color-scheme: dark;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* Lists and Items */
         .week-header {
-            text-align: center;
-            color: var(--accent-color);
-            font-weight: bold;
             font-size: 18px;
+            font-weight: 600;
+            color: var(--accent-color);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 10px;
-        }
-
-        .entry-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .entry-item {
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
         }
 
-        .entry-item:last-child {
-            border-bottom: none;
+        .shift-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shift-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .shift-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .shift-date {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .shift-time {
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .shift-role {
+            font-size: 12px;
+            color: var(--accent-color);
+            background: rgba(252, 163, 17, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .shift-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .shift-pay {
+            font-size: 16px;
+            font-weight: 600;
         }
 
         .btn-delete {
             background: none;
-            color: var(--danger-color);
-            border: none;
-            font-size: 22px;
-            padding: 0 0 0 15px;
+            color: var(--danger);
+            padding: 5px;
+            font-size: 20px;
             margin: 0;
         }
 
+        /* Summaries */
         .week-summary {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed var(--border-color);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .week-summary-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 16px;
-            align-items: center;
-        }
-
-        .grand-total-card {
-            background-color: var(--card-bg);
-            border: 2px solid var(--accent-color);
-            padding: 15px;
+            margin-top: 20px;
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
-            margin-top: 30px;
+            padding: 15px;
         }
 
-        .grand-total-card h3 {
-            margin-top: 0;
-            text-align: center;
-            color: var(--accent-color);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-
-        .grand-row {
+        .summary-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 16px;
+            margin-bottom: 8px;
+            font-size: 15px;
+            color: var(--text-muted);
         }
 
-        .grand-total-highlight {
-            font-size: 22px;
-            font-weight: bold;
-            color: var(--accent-color);
-            border-top: 1px solid var(--border-color);
-            padding-top: 10px;
-            margin-top: 10px;
+        .summary-row.total {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0;
         }
 
-        .ot-badge {
-            background-color: rgba(255, 69, 58, 0.2);
-            color: var(--danger-color);
+        .ot-indicator {
             font-size: 11px;
+            color: var(--danger);
+            border: 1px solid var(--danger);
             padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: 6px;
-            vertical-align: middle;
+            border-radius: 6px;
+            margin-top: 4px;
         }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+        .text-accent { color: var(--accent-color); }
     </style>
 </head>
 <body>
 
     <h1>Work Log</h1>
 
-    <div class="card">
-        <div class="input-group">
-            <div class="input-field" style="flex: 1.2;">
+    <div class="top-controls">
+        <button class="btn-outline" onclick="manageProfiles()">⚙️ Positions</button>
+        <button class="btn-outline" onclick="startNewWeek()">📅 New Week</button>
+    </div>
+
+    <div id="inputSection" class="glass-card hidden">
+        <div class="week-header">
+            <span id="activeWeekTitle">Current Week</span>
+        </div>
+        
+        <div class="input-row">
+            <div class="input-group" style="flex: 1.5;">
                 <label>Date</label>
-                <input type="date" id="dateInput" required>
+                <input type="date" id="dateInput">
             </div>
-            <div class="input-field" style="flex: 2;">
+            <div class="input-group" style="flex: 2;">
                 <label>Position</label>
                 <select id="profileSelect"></select>
             </div>
-            <button class="btn-new-profile" onclick="createNewProfile()">+ New</button>
         </div>
-        <div class="input-group">
-            <div class="input-field">
+
+        <div class="input-row">
+            <div class="input-group">
                 <label>Start</label>
-                <input type="time" id="startInput" required>
+                <input type="time" id="startInput">
             </div>
-            <div class="input-field">
+            <div class="input-group">
                 <label>End</label>
-                <input type="time" id="endInput" required>
+                <input type="time" id="endInput">
             </div>
         </div>
-        <button class="btn-primary" onclick="addEntry()">Add Shift</button>
+
+        <button class="btn-primary" onclick="addShift()">Add Shift</button>
     </div>
 
-    <div id="weeklyContainer"></div>
-
-    <div class="grand-total-card">
-        <h3>GRAND SUMMARY</h3>
-        <div class="grand-row">
-            <span>Total Work Hours:</span>
-            <span id="grandHours">0h 0m</span>
-        </div>
-        <div class="grand-row grand-total-highlight">
-            <span>TOTAL:</span>
-            <span id="grandPay">0.00 $</span>
-        </div>
-    </div>
+    <div id="weeksContainer"></div>
 
     <script>
-        // --- DATA MANAGEMENT ---
+        // --- DATA STRUCTURE ---
+        // profiles: [{id, name, wage, otWage}]
+        // weeks: [{ id, title, shifts: [{id, date, profileId, start, end, minutes}] }]
         
-        let profiles = JSON.parse(localStorage.getItem('workProfiles'));
+        let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v2'));
         if (!profiles || profiles.length === 0) {
             profiles = [
                 { id: 'busser', name: 'Busser', wage: 10.60, otWage: 19.71 },
                 { id: 'dishwasher', name: 'Dishwasher', wage: 10.60, otWage: 19.71 }
             ];
-            saveProfiles();
+            localStorage.setItem('workLogProfiles_v2', JSON.stringify(profiles));
         }
 
-        let entries = JSON.parse(localStorage.getItem('workEntries')) || [];
+        let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v2')) || [];
+        let activeWeekId = weeks.length > 0 ? weeks[0].id : null; // First in array is the newest
 
         document.getElementById('dateInput').valueAsDate = new Date();
 
-        function saveProfiles() {
-            localStorage.setItem('workProfiles', JSON.stringify(profiles));
-        }
+        // --- CORE FUNCTIONS ---
 
         function saveData() {
-            localStorage.setItem('workEntries', JSON.stringify(entries));
+            localStorage.setItem('workLogWeeks_v2', JSON.stringify(weeks));
+            localStorage.setItem('workLogProfiles_v2', JSON.stringify(profiles));
         }
 
-        // --- UI FUNCTIONS ---
-
-        function renderProfiles() {
-            const select = document.getElementById('profileSelect');
-            select.innerHTML = '';
-            profiles.forEach(p => {
-                const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = `${p.name} (${p.wage}$/h)`;
-                select.appendChild(opt);
-            });
-        }
-
-        function createNewProfile() {
-            const name = prompt("Position name (e.g., Server):");
+        function manageProfiles() {
+            const name = prompt("Enter new position name (e.g., Server):");
             if (!name) return;
             
-            const wageInput = prompt(`What is the hourly wage for ${name}? ($)`);
-            if (!wageInput) return;
-            const wage = parseFloat(wageInput.replace(',', '.'));
-            
-            if (isNaN(wage)) {
-                alert("Invalid amount.");
-                return;
-            }
+            const wage = parseFloat(prompt(`Hourly wage for ${name}? ($)`).replace(',', '.'));
+            if (isNaN(wage)) return alert("Invalid amount.");
             
             const defaultOt = (wage * 1.86).toFixed(2);
-            const otInput = prompt(`What is the Overtime wage? (1.86x multiplier applied by default)`, defaultOt);
-            if (!otInput) return;
-            const otWage = parseFloat(otInput.replace(',', '.'));
+            const otWage = parseFloat(prompt(`Overtime wage? (Default 1.86x multiplier)`, defaultOt).replace(',', '.'));
+            if (isNaN(otWage)) return alert("Invalid amount.");
 
-            if (isNaN(otWage)) {
-                alert("Invalid amount.");
-                return;
-            }
-
-            const newProfile = {
-                id: Date.now().toString(),
-                name: name,
-                wage: wage,
-                otWage: otWage
-            };
-            
-            profiles.push(newProfile);
-            saveProfiles();
-            renderProfiles();
-            document.getElementById('profileSelect').value = newProfile.id;
-            renderEntries();
+            profiles.push({ id: Date.now().toString(), name, wage, otWage });
+            saveData();
+            renderUI();
         }
 
-        function addEntry() {
+        function startNewWeek() {
+            const title = prompt("Name this week (e.g., June 29 - July 5):");
+            if (!title) return;
+
+            const newWeek = {
+                id: Date.now().toString(),
+                title: title,
+                shifts: []
+            };
+
+            // Add to the beginning of the array so newest is on top
+            weeks.unshift(newWeek);
+            activeWeekId = newWeek.id;
+            saveData();
+            renderUI();
+        }
+
+        function addShift() {
+            if (!activeWeekId) return alert("Please create a New Week first!");
+
             const date = document.getElementById('dateInput').value;
             const profileId = document.getElementById('profileSelect').value;
             const start = document.getElementById('startInput').value;
             const end = document.getElementById('endInput').value;
 
-            if (!date || !start || !end) {
-                alert("Please fill in all date and time fields!");
-                return;
-            }
+            if (!date || !start || !end) return alert("Please fill in all time fields.");
 
             const startTime = new Date(`1970-01-01T${start}:00`);
             const endTime = new Date(`1970-01-01T${end}:00`);
             let diffMins = (endTime - startTime) / 1000 / 60;
-            if (diffMins < 0) diffMins += 24 * 60;
+            if (diffMins < 0) diffMins += 24 * 60; // Crosses midnight
 
-            const entry = {
-                id: Date.now(),
-                date: date,
-                profileId: profileId,
-                start: start,
-                end: end,
-                minutes: diffMins
-            };
+            const activeWeek = weeks.find(w => w.id === activeWeekId);
+            activeWeek.shifts.push({
+                id: Date.now().toString(),
+                date, profileId, start, end, minutes: diffMins
+            });
 
-            entries.push(entry);
             saveData();
-            renderEntries();
-            
+            renderUI();
+
             document.getElementById('startInput').value = '';
             document.getElementById('endInput').value = '';
         }
 
-        function deleteEntry(id) {
-            entries = entries.filter(e => e.id !== id);
+        function deleteShift(weekId, shiftId) {
+            if(!confirm("Delete this shift?")) return;
+            const week = weeks.find(w => w.id === weekId);
+            week.shifts = week.shifts.filter(s => s.id !== shiftId);
             saveData();
-            renderEntries();
+            renderUI();
         }
 
-        // --- WEEKLY LOGIC ---
+        // --- RENDER LOGIC (INCLUDING OVERTIME) ---
 
-        function getWeekIdentifier(dateStr) {
-            const [y, m, d] = dateStr.split('-');
-            const date = new Date(y, m - 1, d);
-            const day = date.getDay() === 0 ? 7 : date.getDay(); 
-            date.setDate(date.getDate() - day + 1); 
-            
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            return `${date.getFullYear()}-${mm}-${dd}`;
-        }
+        function renderUI() {
+            // Update Profile Select
+            const select = document.getElementById('profileSelect');
+            const currentVal = select.value;
+            select.innerHTML = '';
+            profiles.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} ($${p.wage})`;
+                select.appendChild(opt);
+            });
+            if (currentVal && profiles.some(p => p.id === currentVal)) select.value = currentVal;
 
-        function getWeekLabel(mondayDateStr) {
-            const [y, m, d] = mondayDateStr.split('-');
-            const monday = new Date(y, m - 1, d);
-            
-            const sunday = new Date(monday);
-            sunday.setDate(sunday.getDate() + 6);
-            
-            const mMonth = String(monday.getMonth() + 1).padStart(2, '0');
-            const mDay = String(monday.getDate()).padStart(2, '0');
-            const sMonth = String(sunday.getMonth() + 1).padStart(2, '0');
-            const sDay = String(sunday.getDate()).padStart(2, '0');
-            
-            return `${mMonth}.${mDay} - ${sMonth}.${sDay}`;
-        }
+            // Handle Input Section Visibility
+            const inputSection = document.getElementById('inputSection');
+            if (weeks.length === 0) {
+                inputSection.classList.add('hidden');
+                document.getElementById('weeksContainer').innerHTML = `<div class="glass-card" style="text-align:center; color: var(--text-muted);">Tap "New Week" to start tracking.</div>`;
+                return;
+            } else {
+                inputSection.classList.remove('hidden');
+                activeWeekId = weeks[0].id; // Ensure top week is active
+                document.getElementById('activeWeekTitle').textContent = `Adding to: ${weeks[0].title}`;
+            }
 
-        function renderEntries() {
-            const container = document.getElementById('weeklyContainer');
+            const container = document.getElementById('weeksContainer');
             container.innerHTML = '';
 
-            let weeks = {}; 
-            let grandTotalMins = 0;
-            let grandTotalPay = 0;
+            // Render Weeks
+            weeks.forEach((week, index) => {
+                const isLatest = index === 0; // Only the most recent week is "open" for adding visually via the top form
 
-            entries.sort((a, b) => {
-                const timeA = new Date(a.date + 'T' + a.start);
-                const timeB = new Date(b.date + 'T' + b.start);
-                return timeA - timeB;
-            });
+                // 1. Sort shifts chronologically for accurate Overtime calculation
+                week.shifts.sort((a, b) => new Date(a.date + 'T' + a.start) - new Date(b.date + 'T' + b.start));
 
-            entries.forEach(entry => {
-                const weekKey = getWeekIdentifier(entry.date);
-                if (!weeks[weekKey]) {
-                    weeks[weekKey] = { entries: [], totalMins: 0, totalPay: 0, otMins: 0 };
-                }
-                
-                const profile = profiles.find(p => p.id === entry.profileId) || profiles[0];
-                const wage = profile ? profile.wage : 0;
-                const otWage = profile ? profile.otWage : 0;
+                let cumulativeMinutes = 0;
+                let totalWeekPay = 0;
+                let totalOTMinutes = 0;
 
-                let minsForEntry = entry.minutes;
-                let regMins = 0;
-                let otMins = 0;
-                
-                if (weeks[weekKey].totalMins >= 40 * 60) {
-                    otMins = minsForEntry; 
-                } else if (weeks[weekKey].totalMins + minsForEntry > 40 * 60) {
-                    regMins = (40 * 60) - weeks[weekKey].totalMins; 
-                    otMins = minsForEntry - regMins; 
-                } else {
-                    regMins = minsForEntry; 
-                }
+                let shiftsHTML = '';
 
-                const pay = (regMins / 60) * wage + (otMins / 60) * otWage;
-                
-                entry.calculatedPay = pay;
-                entry.isOt = (otMins > 0); 
-                
-                weeks[weekKey].entries.push(entry);
-                weeks[weekKey].totalMins += minsForEntry;
-                weeks[weekKey].otMins += otMins;
-                weeks[weekKey].totalPay += pay;
-            });
-
-            const sortedWeeks = Object.keys(weeks).sort().reverse();
-            
-            sortedWeeks.forEach(weekStr => {
-                const weekData = weeks[weekStr];
-                
-                const weekDiv = document.createElement('div');
-                weekDiv.className = 'card';
-                
-                const header = document.createElement('div');
-                header.className = 'week-header';
-                header.textContent = getWeekLabel(weekStr);
-                weekDiv.appendChild(header);
-                
-                const ul = document.createElement('ul');
-                ul.className = 'entry-list';
-                
-                weekData.entries.sort((a, b) => new Date(b.date + 'T' + b.start) - new Date(a.date + 'T' + a.start));
-
-                weekData.entries.forEach(entry => {
-                    const profile = profiles.find(p => p.id === entry.profileId) || profiles[0];
-                    const dateObj = new Date(entry.date);
-                    const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-                    const dateStr = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')} / ${days[dateObj.getDay()]}`;
+                // 2. Calculate shifts
+                week.shifts.forEach(shift => {
+                    const profile = profiles.find(p => p.id === shift.profileId) || profiles[0];
                     
-                    const li = document.createElement('li');
-                    li.className = 'entry-item';
+                    let regMins = 0;
+                    let otMins = 0;
                     
-                    const otBadge = entry.isOt ? `<span class="ot-badge">OT</span>` : '';
+                    // OT Logic: over 40 hours (2400 minutes)
+                    if (cumulativeMinutes >= 2400) {
+                        otMins = shift.minutes; // All OT
+                    } else if (cumulativeMinutes + shift.minutes > 2400) {
+                        regMins = 2400 - cumulativeMinutes; // Fill up to 40h
+                        otMins = shift.minutes - regMins;   // Rest is OT
+                    } else {
+                        regMins = shift.minutes; // All Regular
+                    }
 
-                    li.innerHTML = `
-                        <div style="flex: 1;">
-                            <div style="color: #ccc; font-size: 14px;">
-                                ${dateStr} <span style="color:var(--accent-color); font-size:12px; margin-left:5px;">${profile.name}</span>
-                                ${otBadge}
+                    cumulativeMinutes += shift.minutes;
+                    totalOTMinutes += otMins;
+
+                    const shiftPay = (regMins / 60) * profile.wage + (otMins / 60) * profile.otWage;
+                    totalWeekPay += shiftPay;
+
+                    // Formatting date
+                    const d = new Date(shift.date);
+                    const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+                    shiftsHTML += `
+                        <div class="shift-item">
+                            <div class="shift-info">
+                                <span class="shift-date">${dateStr}</span>
+                                <span class="shift-role">${profile.name}</span>
+                                <span class="shift-time">${shift.start} - ${shift.end}</span>
+                                ${otMins > 0 ? `<span class="ot-indicator">Includes OT</span>` : ''}
                             </div>
-                            <div style="text-decoration: underline; text-decoration-color: #555; font-size: 16px; margin-top:4px;">
-                                ${entry.start}-${entry.end}
+                            <div class="shift-right">
+                                <button class="btn-delete" onclick="deleteShift('${week.id}', '${shift.id}')">✕</button>
+                                <span class="shift-pay">$${shiftPay.toFixed(2)}</span>
                             </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="font-weight: bold; font-size: 16px;">${entry.calculatedPay.toFixed(2)} $</div>
-                            <button class="btn-delete" onclick="deleteEntry(${entry.id})">×</button>
                         </div>
                     `;
-                    ul.appendChild(li);
                 });
-                weekDiv.appendChild(ul);
-                
-                const hours = Math.floor(weekData.totalMins / 60);
-                const mins = weekData.totalMins % 60;
-                
-                let otInfo = '';
-                if (weekData.otMins > 0) {
-                    const otH = Math.floor(weekData.otMins / 60);
-                    const otM = weekData.otMins % 60;
-                    otInfo = `<span style="font-size: 13px; color: var(--danger-color);">(Overtime: ${otH}h ${otM}m)</span>`;
-                }
 
-                const summary = document.createElement('div');
-                summary.className = 'week-summary';
-                summary.innerHTML = `
-                    <div class="week-summary-row">
-                        <span>⏱ <span style="color: white; font-weight: bold;">${hours}h ${mins}m</span></span>
-                    </div>
-                    ${otInfo ? `<div style="text-align: right; margin-top: -5px;">${otInfo}</div>` : ''}
-                    <div class="week-summary-row" style="margin-top: 5px;">
-                        <span>💵 <span style="color: var(--accent-color); font-weight: bold; font-size: 20px;">${weekData.totalPay.toFixed(2)} $</span></span>
+                // Format Summaries
+                const totalHours = Math.floor(cumulativeMinutes / 60);
+                const totalMins = cumulativeMinutes % 60;
+                const otHours = Math.floor(totalOTMinutes / 60);
+                const otRemainingMins = totalOTMinutes % 60;
+
+                const weekHTML = `
+                    <div class="glass-card">
+                        <div class="week-header">
+                            <span>🗓 ${week.title}</span>
+                            ${isLatest ? `<span style="font-size: 12px; color: var(--success); font-weight: normal;">Active</span>` : ''}
+                        </div>
+                        
+                        <div class="shift-list">
+                            ${shiftsHTML || '<div style="color:var(--text-muted); font-size: 14px; text-align:center;">No shifts added yet.</div>'}
+                        </div>
+
+                        <div class="week-summary">
+                            <div class="summary-row">
+                                <span>Total Time:</span>
+                                <span style="color: white;">${totalHours}h ${totalMins}m</span>
+                            </div>
+                            <div class="summary-row">
+                                <span>Overtime (40h+):</span>
+                                <span class="${totalOTMinutes > 0 ? 'text-accent' : ''}">${otHours}h ${otRemainingMins}m</span>
+                            </div>
+                            <div class="summary-row total">
+                                <span>Total Pay:</span>
+                                <span class="text-accent">$${totalWeekPay.toFixed(2)}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
-                weekDiv.appendChild(summary);
                 
-                container.appendChild(weekDiv);
-                
-                grandTotalMins += weekData.totalMins;
-                grandTotalPay += weekData.totalPay;
+                container.innerHTML += weekHTML;
             });
-            
-            const grandH = Math.floor(grandTotalMins / 60);
-            const grandM = grandTotalMins % 60;
-            document.getElementById('grandHours').textContent = `${grandH}h ${grandM}m`;
-            document.getElementById('grandPay').textContent = `${grandTotalPay.toFixed(2)} $`;
         }
 
-        renderProfiles();
-        renderEntries();
+        // --- INIT ---
+        renderUI();
 
     </script>
 </body>
