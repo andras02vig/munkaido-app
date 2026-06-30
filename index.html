@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Log</title>
+    
+    <!-- iOS App parancsok és Manifest -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Work Log">
+    <link rel="apple-touch-icon" href="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png">
+
     <style>
         :root {
             --accent-color: #fca311;
@@ -20,6 +28,8 @@
             background: linear-gradient(135deg, #121212 0%, #1c1c1e 50%, #000000 100%);
             background-attachment: fixed;
             color: var(--text-main);
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         h1 {
@@ -33,7 +43,6 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* Glassmorphism Classes */
         .glass-card {
             background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(16px);
@@ -83,7 +92,6 @@
             padding: 14px;
         }
 
-        /* Forms & Inputs */
         .input-row {
             display: flex;
             gap: 12px;
@@ -112,13 +120,14 @@
             font-size: 16px;
             color-scheme: dark;
             outline: none;
+            -webkit-user-select: auto;
+            user-select: auto;
         }
 
         input:focus, select:focus {
             border-color: var(--accent-color);
         }
 
-        /* Inline summary inputs for Tips & Housing */
         .inline-input {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -135,7 +144,6 @@
             border-color: var(--accent-color);
         }
 
-        /* Week Header & Collapsible */
         .week-header {
             cursor: pointer;
             display: flex;
@@ -163,7 +171,6 @@
             color: var(--text-muted);
         }
 
-        /* Summaries */
         .week-summary {
             background: rgba(0,0,0,0.2);
             border-radius: 12px;
@@ -200,7 +207,6 @@
             color: var(--text-muted);
         }
 
-        /* Lists and Items */
         .shift-list {
             display: flex;
             flex-direction: column;
@@ -318,7 +324,14 @@
     <div id="weeksContainer"></div>
 
     <script>
-        // --- DATA STRUCTURE (v4 clean wipe) ---
+        // --- Service Worker Regisztráció ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+            });
+        }
+
+        // --- DATA STRUCTURE ---
         let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v4')) || [];
         let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v4')) || [];
         let activeWeekId = weeks.length > 0 ? weeks[0].id : null;
@@ -331,7 +344,6 @@
         }
 
         // --- CORE FUNCTIONS ---
-
         function manageProfiles() {
             const name = prompt("Enter new position name (e.g., Server):");
             if (!name) return;
@@ -423,7 +435,6 @@
         }
 
         // --- RENDER LOGIC ---
-
         function renderUI() {
             const select = document.getElementById('profileSelect');
             const currentVal = select.value;
@@ -463,7 +474,18 @@
             weeks.forEach((week, index) => {
                 const isLatest = index === 0;
 
-                week.shifts.sort((a, b) => new Date(a.date + 'T' + a.start) - new Date(b.date + 'T' + b.start));
+                // iOS-Golyóálló Időrendi Rendezés (Legrégebbi felül, Legújabb alul)
+                week.shifts.sort((a, b) => {
+                    const [aY, aM, aD] = a.date.split('-');
+                    const [aH, aMin] = a.start.split(':');
+                    const dateA = new Date(aY, aM - 1, aD, aH, aMin).getTime();
+
+                    const [bY, bM, bD] = b.date.split('-');
+                    const [bH, bMin] = b.start.split(':');
+                    const dateB = new Date(bY, bM - 1, bD, bH, bMin).getTime();
+
+                    return dateA - dateB; 
+                });
 
                 let cumulativeMinutes = 0;
                 let totalWeekPay = 0;
@@ -516,7 +538,6 @@
                 const otHours = Math.floor(totalOTMinutes / 60);
                 const otRemainingMins = totalOTMinutes % 60;
 
-                // Net Pay számítás (Gross + Tips - Housing)
                 const weekTips = week.tips || 0;
                 const weekHousing = week.housing || 0;
                 const netWeekPay = totalWeekPay + weekTips - weekHousing;
@@ -592,7 +613,6 @@
         }
 
         renderUI();
-
     </script>
 </body>
 </html>
