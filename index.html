@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Work Log</title>
     
-    <!-- iOS App parancsok és Manifest -->
     <link rel="manifest" href="./manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -102,6 +101,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
         .input-group label {
@@ -292,16 +292,19 @@
     </div>
 
     <div id="inputSection" class="glass-card hidden">
-        <div class="week-header-top" style="margin-bottom: 15px; justify-content: center;">
-            <span id="activeWeekTitle" style="color: var(--text-main); font-size: 16px;">Current Week</span>
+        <div class="input-row">
+            <div class="input-group">
+                <label>Target Week (Where to add shift)</label>
+                <select id="weekSelect"></select>
+            </div>
         </div>
         
         <div class="input-row">
-            <div class="input-group" style="flex: 1.5;">
+            <div class="input-group" style="flex: 1.2;">
                 <label>Date</label>
                 <input type="date" id="dateInput">
             </div>
-            <div class="input-group" style="flex: 2;">
+            <div class="input-group" style="flex: 1.8;">
                 <label>Position</label>
                 <select id="profileSelect"></select>
             </div>
@@ -309,11 +312,11 @@
 
         <div class="input-row">
             <div class="input-group">
-                <label>Start</label>
+                <label>Start Time</label>
                 <input type="time" id="startInput">
             </div>
             <div class="input-group">
-                <label>End</label>
+                <label>End Time</label>
                 <input type="time" id="endInput">
             </div>
         </div>
@@ -324,7 +327,7 @@
     <div id="weeksContainer"></div>
 
     <script>
-        // --- Service Worker Regisztráció ---
+        // --- Service Worker ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
@@ -334,9 +337,17 @@
         // --- DATA STRUCTURE ---
         let profiles = JSON.parse(localStorage.getItem('workLogProfiles_v4')) || [];
         let weeks = JSON.parse(localStorage.getItem('workLogWeeks_v4')) || [];
-        let activeWeekId = weeks.length > 0 ? weeks[0].id : null;
 
-        document.getElementById('dateInput').valueAsDate = new Date();
+        // --- DRAFT INPUT INITIALIZATION (Problem 1 Fix) ---
+        // Betöltjük a memóriából a legutóbb beírt értékeket, ha léteznek
+        document.getElementById('dateInput').value = localStorage.getItem('wl_draft_date') || new Date().toISOString().split('T')[0];
+        document.getElementById('startInput').value = localStorage.getItem('wl_draft_start') || '';
+        document.getElementById('endInput').value = localStorage.getItem('wl_draft_end') || '';
+
+        // Eseménykezelők az automatikus mentéshez gépelés közben
+        document.getElementById('dateInput').addEventListener('input', (e) => localStorage.setItem('wl_draft_date', e.target.value));
+        document.getElementById('startInput').addEventListener('input', (e) => localStorage.setItem('wl_draft_start', e.target.value));
+        document.getElementById('endInput').addEventListener('input', (e) => localStorage.setItem('wl_draft_end', e.target.value));
 
         function saveData() {
             localStorage.setItem('workLogWeeks_v4', JSON.stringify(weeks));
@@ -374,14 +385,16 @@
             };
 
             weeks.unshift(newWeek);
-            activeWeekId = newWeek.id;
             saveData();
             renderUI();
         }
 
         function addShift() {
             if (profiles.length === 0) return alert("Please create a position (⚙️ Positions) first!");
-            if (!activeWeekId) return alert("Please create a New Week first!");
+            
+            // Kiválasztjuk a célszerű hetet a dropdownból (Problem 2 Fix)
+            const targetWeekId = document.getElementById('weekSelect').value;
+            if (!targetWeekId) return alert("Please create a New Week first!");
 
             const date = document.getElementById('dateInput').value;
             const profileId = document.getElementById('profileSelect').value;
@@ -395,19 +408,24 @@
             let diffMins = (endTime - startTime) / 1000 / 60;
             if (diffMins < 0) diffMins += 24 * 60; 
 
-            const activeWeek = weeks.find(w => w.id === activeWeekId);
-            activeWeek.shifts.push({
+            const targetWeek = weeks.find(w => w.id === targetWeekId);
+            targetWeek.shifts.push({
                 id: Date.now().toString(),
                 date, profileId, start, end, minutes: diffMins
             });
             
-            activeWeek.isCollapsed = false;
+            // Automatikusan kinyitjuk a célszerű hetet, hogy látszódjon az eredmény
+            targetWeek.isCollapsed = false;
 
             saveData();
-            renderUI();
 
+            // SIKERES HOZZÁADÁS UTÁN: Mezők és draftok törlése
             document.getElementById('startInput').value = '';
             document.getElementById('endInput').value = '';
+            localStorage.removeItem('wl_draft_start');
+            localStorage.removeItem('wl_draft_end');
+
+            renderUI();
         }
 
         function deleteShift(weekId, shiftId) {
@@ -436,25 +454,38 @@
 
         // --- RENDER LOGIC ---
         function renderUI() {
+            // Position select frissítése
             const select = document.getElementById('profileSelect');
             const currentVal = select.value;
             select.innerHTML = '';
-            
             if (profiles.length === 0) {
                 const opt = document.createElement('option');
-                opt.value = "";
-                opt.textContent = "-- Create Position First --";
+                opt.value = ""; opt.textContent = "-- Create Position First --";
                 select.appendChild(opt);
                 select.disabled = true;
             } else {
                 select.disabled = false;
                 profiles.forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = `${p.name} ($${p.wage})`;
+                    opt.value = p.id; opt.textContent = `${p.name} ($${p.wage})`;
                     select.appendChild(opt);
                 });
                 if (currentVal && profiles.some(p => p.id === currentVal)) select.value = currentVal;
+            }
+
+            // Target Week Selector frissítése (Problem 2 Fix)
+            const weekSelect = document.getElementById('weekSelect');
+            const previousWeekSel = weekSelect.value;
+            weekSelect.innerHTML = '';
+            weeks.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.id; opt.textContent = w.title;
+                weekSelect.appendChild(opt);
+            });
+            if (previousWeekSel && weeks.some(w => w.id === previousWeekSel)) {
+                weekSelect.value = previousWeekSel;
+            } else if (weeks.length > 0) {
+                weekSelect.value = weeks[0].id;
             }
 
             const inputSection = document.getElementById('inputSection');
@@ -464,17 +495,13 @@
                 return;
             } else {
                 inputSection.classList.remove('hidden');
-                activeWeekId = weeks[0].id;
-                document.getElementById('activeWeekTitle').textContent = `Adding to: ${weeks[0].title}`;
             }
 
             const container = document.getElementById('weeksContainer');
             container.innerHTML = '';
 
-            weeks.forEach((week, index) => {
-                const isLatest = index === 0;
-
-                // iOS-Golyóálló Időrendi Rendezés (Legrégebbi felül, Legújabb alul)
+            weeks.forEach((week) => {
+                // Szigorú iOS-kompatibilis időrendi rendezés (időben korábbi felülre)
                 week.shifts.sort((a, b) => {
                     const [aY, aM, aD] = a.date.split('-');
                     const [aH, aMin] = a.start.split(':');
@@ -548,10 +575,7 @@
                 let headerContent = `
                     <div class="week-header-top">
                         <span>🗓 ${week.title}</span>
-                        <div style="display:flex; align-items:center; gap: 10px;">
-                            ${isLatest ? `<span style="font-size: 12px; color: var(--success); font-weight: normal;">Active</span>` : ''}
-                            <span class="chevron">${chevronIcon}</span>
-                        </div>
+                        <span class="chevron">${chevronIcon}</span>
                     </div>
                 `;
 
@@ -607,7 +631,6 @@
                         ${expandedContent}
                     </div>
                 `;
-                
                 container.innerHTML += weekHTML;
             });
         }
